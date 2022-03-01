@@ -8,6 +8,7 @@ NULL
 #' @author Saiem Gilani
 #' @param game_id Game ID
 #' @param version Play-by-play version ("v2" available from 2016-17 onwards)
+#' @param return_message If TRUE returns message
 #' @return Returns a named list of data frames: PlayByPlay
 #' @importFrom jsonlite fromJSON toJSON
 #' @importFrom dplyr filter select rename bind_cols bind_rows as_tibble
@@ -117,6 +118,51 @@ nba_pbp <- function(game_id, version = "v2", return_message = TRUE){
     }
   )
   return(data)
+}
+
+
+#' **Get NBA Stats API play-by-play**
+#' @name pbp
+NULL
+#' @title
+#' **Get NBA Stats API play-by-play**
+#' @rdname pbp
+#' @author Jason Lee
+#' @param game_id Game ID
+#' @param version Play-by-play version ("v2" available from 2016-17 onwards)
+#' @param nest_data If TRUE returns nested data by game
+#' @param return_message If TRUE returns message
+#' @return Returns a named list of data frames: PlayByPlay
+#' @importFrom jsonlite fromJSON toJSON
+#' @importFrom dplyr filter select rename bind_cols bind_rows as_tibble
+#' @import rvest
+#' @export
+nba_pbps <-function(game_ids = NULL,
+                    version = "v2",
+                    nest_data = FALSE,
+                    return_message = TRUE) {
+
+  if (game_ids %>% purrr::is_null()) {
+    stop("Please enter game ids")
+  }
+
+  get_pbp_safe <-
+    purrr::possibly(nba_pbp, dplyr::tibble())
+
+  all_data <-
+    game_ids %>%
+    purrr::map_dfr(function(game_id) {
+      get_pbp_safe(game_id = game_id, return_message = return_message)
+    })
+
+  if (nest_data) {
+    all_data <-
+      all_data %>%
+      dplyr::group_by(game_id) %>%
+      tidyr::nest()
+  }
+
+  return(all_data)
 }
 
 
